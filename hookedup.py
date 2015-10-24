@@ -1,4 +1,4 @@
-from collections import defaultdict
+import collections
 
 class Abort(Exception):
     """ raise this when aborting an action. Must be raised during the pre-action hook call """
@@ -17,7 +17,7 @@ class List(list):
         """
         super().__init__(*args)
         empty_func = lambda: lambda *_, **__: None
-        self._hook = defaultdict(empty_func)
+        self._hook = collections.defaultdict(empty_func)
         if 'hook' in kwargs:
             self._hook.update(kwargs['hook'])
 
@@ -179,11 +179,11 @@ class List(list):
 class PreventOverwritingList:
     def __setattr__(self, attr_name, attr):
         if attr_name == 'children':
-            if not isinstance(attr, ChildrenMonitor):
-                if not isinstance(attr, list):
-                    raise AttributeError('must set children to a list')
-                Hook_Key = self.children._Hook_Key  # get other child's Hook Key
-                attr = ChildrenMonitor(attr, Hook_Key=Hook_Key)
+            if not isinstance(attr, List):
+                if not isinstance(attr, collections.Iterable):
+                    raise AttributeError('must set ' + attr_name + ' to an iterable')
+                hook = getattr(self, attr_name)._hook  # get other child's Hook Key
+                attr = List(attr, hook=hook)
         super().__setattr__(attr_name, attr)
 
 
