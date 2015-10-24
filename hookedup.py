@@ -27,20 +27,18 @@ class List(list):
             return True
         return False
 
-    def _trigger_index_error_if_applicable(self, index, fxn, *args):
-        """ determine from provided index if operation would trigger index error. If it would, call
-        provided function with supplied arguments to trigger native exception.
+    def _verify_index_bounds(self, index, fxn_name='list'):
+        """ determine from provided index if operation would trigger index error. If it does, raise
+        IndexError. If calling from a pop function, set optional fxn_name to "pop"
         params:
         index: integer index at which to access an element inside list
-        fxn: typically a super().fxn to call if IndexError were to trigger
-        args: any arguments to pass to fxn
+        fxn_name: optional name to use instead of "list" when raising error
 
         Returns: None. May raise IndexError instead
         """
         length = len(self)
         if length == 0 or index >= length or index < -length:
-            #raise IndexError('list index out of range')
-            fxn(*args)  # trigger exception
+            raise IndexError(fxn_name + ' index out of range')
 
     def insert(self, index, item):
         if self._hook_fxn_aborts('pre-add', item):
@@ -58,7 +56,7 @@ class List(list):
         """ Pop item @ index (or end of list if not supplied). Regardless of Abort status, return
         item. (but Abort will prevent item removal)
         """
-        self._trigger_index_error_if_applicable(index, super().pop, index)
+        self._verify_index_bounds(index, "pop")
         item = self[index]
         if self._hook_fxn_aborts('pre-remove', item):
             return item  # maintain expected operation in Abort, so return item w/o removing
@@ -68,7 +66,7 @@ class List(list):
 
     def remove(self, item):
         if item not in self:
-            super().remove(item)  # trigger standard ValueError 
+            raise ValueError('list.remove(x): x not in list')
         if self._hook_fxn_aborts('pre-remove', item):
             return
         super().remove(item)
@@ -77,14 +75,14 @@ class List(list):
     def __setitem__(self, index, replacement):
         # base-case: single item replacement
         if type(index) == int:
-            self._trigger_index_error_if_applicable(index, super().__setitem__, index, replacement)
+            self._verify_index_bounds(index)
             item = self[index]
             if self._hook_fxn_aborts('pre-replace', item, replacement):
                 return
             super().__setitem__(index, replacement)
             self._hook['post-replace'](item, replacement)
             return
-        list_slice = self[index]
+        list_slice = self[index]  # trigger standard error if index is not slice
         self._verify_slices_are_valid(index, list_slice, replacement)
         last_index = self._replace_corresponding_items_in_both_slices(index, list_slice, 
                                                                       replacement)
