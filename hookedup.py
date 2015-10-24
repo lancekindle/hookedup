@@ -56,7 +56,7 @@ class List(list):
         
     def pop(self, index=-1):
         """ Pop item @ index (or end of list if not supplied). Regardless of Abort status, return
-        item
+        item. (but Abort will prevent item removal)
         """
         self._trigger_index_error_if_applicable(index, super().pop, index)
         item = self[index]
@@ -76,7 +76,7 @@ class List(list):
 
     def __setitem__(self, index, replacement):
         # base-case: single item replacement
-        if not type(index) == slice:
+        if type(index) == int:
             self._trigger_index_error_if_applicable(index, super().__setitem__, index, replacement)
             item = self[index]
             if self._hook_fxn_aborts('pre-replace', item, replacement):
@@ -85,29 +85,38 @@ class List(list):
             self._hook['post-replace'](item, replacement)
             return
 # index is a slice. First we check that we do not generate a ValueError on Extended Slice
+        if not type(index) == slice:
+            raise TypeError('list indices must be integers, not ' + str(type(index)))
         extended_slice = self[index]
         if index.step is not None and index.step != 1:
             if len(extended_slice) != len(replacement):
                 super().__setitem__(index, replacement)  # trigger ValueError for extended slice
         # if we make it here, then slice is valid, extended_slice is valid. Now we determine how
         # many elements are being replaced vs. how many are being inserted/removed.
-# 2nd case: multi-item replacement (which may include greater or fewer elements than selection)
-        children = self[index]
-        replacements = element
-        i = index.start
-        for i, _, element in zip(range(index.start, index.stop, index.step), children, 
-                                     replacements):  # stop when children/replacements depleted
-            self[i] = element
-            i += 1  # compensate for ending index to begin inserting additional elements
-# determine if we have remaining items to insert / remove
-        #if len(children) > len(replacements):
-# the remaining children must be removed from list. Remove via index instead of .remove to maintain
-# desired operation, since using .remove will remove first instance. Whereas this use case clearly
-# indicated a slice of elements to remove
+        replaceCount = 0
+        for i, _, replacingItem in zip(range(*index.indices(len(self))), extended_slice,
+                                     replacement):
+            self[i] = replacingItem
+            replaceCount += 1
+            i += 1  # compensatation if adding/removing additional items after for-loop
+        # just finished replacing items. Now we either add or remove items
+# remove additional items
+        overflow = len(extended_slice) - len(replacement)
+# if overflow < 0 we have items to add. If overflow > 0 we have items to remove
+        while overflow > 0:
+            item = self[i]
+            if self._hook_fxn_aborts('pre-remove', item):
+                i += 1  # avoid getting same item
+                continue
+            super.().__delitem__(i)  # avoid hook call
+            self._hook['post-remove'](item)
+            overflow -= 1
+        # overflow < 0 equals items we must add to list using insert @ i
+        while overflow < 0:
+            replacingItem = re
+            
             
 
-        #if len(replacements) > len(children):
-        
 
 class PreventOverwritingList:
     def __setattr__(self, attr_name, attr):
