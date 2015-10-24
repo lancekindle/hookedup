@@ -21,6 +21,26 @@ class List(list):
         if 'hook' in kwargs:
             self._hook.update(kwargs['hook'])
 
+    def clear(self):
+        """ remove items from list individually, starting at index 0. Call pre and post-remove
+        functions for each item and do not remove item if pre-remove raises Abort.
+        """
+        i = 0
+        while i < len(self):
+            item = self[i]
+            if self._hook_fxn_aborts('pre-remove', item):
+                i += 1  # compensate for not removing item @ i
+            else:
+                super().__delitem__(item)
+                self._hook['post-remove'](item)
+
+    def extend(self, items):
+        """ append items individually, calling pre and post-add functions. If pre-add function
+        raises Abort, will not add that item.
+        """
+        for item in items:
+            self.append(item)
+
     def _hook_fxn_aborts(self, hook_name, *args):
         """ run the named hook with supplied arguments, and return whether function raised Abort 
         Error or not.
@@ -66,7 +86,7 @@ class List(list):
         self._verify_index_bounds(index, "pop")
         item = self[index]
         if self._hook_fxn_aborts('pre-remove', item):
-            return item  # maintain expected operation in Abort, so return item w/o removing
+            return item  # return expected value even in Abort: return item w/o removing from list
         item = super().pop(index)
         self._hook['post-remove'](item)
         return item
@@ -88,7 +108,6 @@ class List(list):
         functions for each. If slicing specifies items to remove from list, remove items
         individually, calling pre and post-remove functions for each.
         """
-        # base-case: single item replacement
         if type(index) == int:
             self._verify_index_bounds(index)
             item = self[index]
@@ -142,7 +161,7 @@ class List(list):
             if self._hook_fxn_aborts('pre-remove', item):
                 i += 1  # avoid visiting same item
                 continue
-            super().__delitem__(i)  # avoid hook call
+            super().__delitem__(i)
             self._hook['post-remove'](item)
             overflow -= 1
 
