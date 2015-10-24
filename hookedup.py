@@ -84,30 +84,23 @@ class List(list):
             super().__setitem__(index, replacement)
             self._hook['post-replace'](item, replacement)
             return
-# index is a slice. First we check that we do not generate a ValueError on Extended Slice
         list_slice = self[index]
         self._verify_slices_are_valid(index, list_slice, replacement)
-        # how many elements are being replaced vs. how many are being inserted/removed.
-        i = self._replace_corresponding_items_in_both_slices(index, list_slice, replacement)
+        last_index = self._replace_corresponding_items_in_both_slices(index, list_slice, 
+                                                                      replacement)
         overflow = len(list_slice) - len(replacement)
         if overflow > 0:
-            self._remove_remaining_items_in_list_slice(i, overflow)
+            self._remove_remaining_items_in_list_slice(last_index, overflow)
         if overflow < 0:
-            self._add_remaining_items_in_replacement_slice(i, overflow, replacement)
+            self._add_remaining_items_in_replacement_slice(last_index, overflow, replacement)
 
-    def _remove_remaining_items_in_list_slice(self, i, overflow):
-        while overflow > 0:
-            item = self[i]
-            if self._hook_fxn_aborts('pre-remove', item):
-                i += 1  # avoid getting same item
-                continue
-            super.().__delitem__(i)  # avoid hook call
-            self._hook['post-remove'](item)
-            overflow -= 1
-
-    def _add_remaining_items_in_replacement_slice(self, i, overflow, replacement):
-        while overflow < 0:
-            replacingItem = re
+     def _verify_slices_are_valid(self, index, list_slice, replacement_slice):
+        if not type(index) == slice:
+            raise TypeError('list indices must be integer or slice, not ' + str(type(index)))
+        if index.step is not None and index.step != 1:
+            if len(list_slice) != len(replacement_slice):
+                raise ValueError('attempt to assign sequence of size ' str(len(replacement_slice))
+                                 'to extended slice of size ' str(len(list_slice)))
 
     def _replace_corresponding_items_in_both_slices(self, index, list_slice, replacement):
         """ for as long as both slices have an item at a given index, replace list_slice's 
@@ -118,21 +111,29 @@ class List(list):
         i = index.start
         slice_range = index.indices(len(self))
         for i, _, replacingItem in zip(range(*slice_range), list_slice, replacement):
-            self[i] = replacingItem  # recursive call will trigger pre, post hooks
-            matches += 1
+            self[i] = replacingItem  # recursive __setitem__ call will trigger pre, post hooks
             i += 1  # compensate for adding/removing additional items after for-loop
         return i
 
-     def _verify_slices_are_valid(self, index, list_slice, replacement_slice):
-        if not type(index) == slice:
-            raise TypeError('list indices must be integer or slice, not ' + str(type(index)))
-        if index.step is not None and index.step != 1:
-            if len(list_slice) != len(replacement_slice):
-                raise ValueError('attempt to assign sequence of size ' str(len(replacement_slice))
-                                 'to extended slice of size ' str(len(list_slice)))
+    def _remove_remaining_items_in_list_slice(self, i, overflow):
+        while overflow > 0:
+            item = self[i]
+            if self._hook_fxn_aborts('pre-remove', item):
+                i += 1  # avoid visiting same item
+                continue
+            super.().__delitem__(i)  # avoid hook call
+            self._hook['post-remove'](item)
+            overflow -= 1
 
-           
-            
+    def _add_remaining_items_in_replacement_slice(self, i, overflow, replacement):
+        """ insert remaining items in replacement slice to self list """
+        for repl_index in range(overflow, 0, 1):
+            item = replacement[repl_index]
+            if not self._hook_fxn_aborts('pre-add', item):
+                super().insert(i, item)
+                i += 1
+                self._hook['post-add'](item)
+
 
 
 class PreventOverwritingList:
