@@ -94,13 +94,13 @@ class List(list):
         if overflow < 0:
             self._add_remaining_items_in_replacement_slice(last_index, overflow, replacement)
 
-     def _verify_slices_are_valid(self, index, list_slice, replacement_slice):
+    def _verify_slices_are_valid(self, index, list_slice, replacement_slice):
         if not type(index) == slice:
             raise TypeError('list indices must be integer or slice, not ' + str(type(index)))
         if index.step is not None and index.step != 1:
             if len(list_slice) != len(replacement_slice):
-                raise ValueError('attempt to assign sequence of size ' str(len(replacement_slice))
-                                 'to extended slice of size ' str(len(list_slice)))
+                raise ValueError('attempt to assign sequence of size ' + str(len(replacement_slice))
+                                 + ' to extended slice of size ' + str(len(list_slice)))
 
     def _replace_corresponding_items_in_both_slices(self, index, list_slice, replacement):
         """ for as long as both slices have an item at a given index, replace list_slice's 
@@ -121,7 +121,7 @@ class List(list):
             if self._hook_fxn_aborts('pre-remove', item):
                 i += 1  # avoid visiting same item
                 continue
-            super.().__delitem__(i)  # avoid hook call
+            super().__delitem__(i)  # avoid hook call
             self._hook['post-remove'](item)
             overflow -= 1
 
