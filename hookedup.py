@@ -17,8 +17,8 @@ class List(list):
             self._hook.update(kwargs['hook'])
 
     def _hook_fxn_aborts(self, hook_name, *args):
-        """ run the hook with supplied arguments, and return whether function raised Abort Error or
-        not
+        """ run the named hook with supplied arguments, and return whether function raised Abort 
+        Error or not.
         Returns: True or False
         """
         try:
@@ -35,7 +35,7 @@ class List(list):
         fxn: typically a super().fxn to call if IndexError were to trigger
         args: any arguments to pass to fxn
 
-        Returns: None. May raise and IndexError instead
+        Returns: None. May raise IndexError instead
         """
         length = len(self)
         if length == 0 or index >= length or index < -length:
@@ -85,24 +85,17 @@ class List(list):
             self._hook['post-replace'](item, replacement)
             return
 # index is a slice. First we check that we do not generate a ValueError on Extended Slice
-        if not type(index) == slice:
-            raise TypeError('list indices must be integers, not ' + str(type(index)))
-        extended_slice = self[index]
-        if index.step is not None and index.step != 1:
-            if len(extended_slice) != len(replacement):
-                super().__setitem__(index, replacement)  # trigger ValueError for extended slice
-        # if we make it here, then slice is valid, extended_slice is valid. Now we determine how
-        # many elements are being replaced vs. how many are being inserted/removed.
-        replaceCount = 0
-        for i, _, replacingItem in zip(range(*index.indices(len(self))), extended_slice,
-                                     replacement):
-            self[i] = replacingItem
-            replaceCount += 1
-            i += 1  # compensatation if adding/removing additional items after for-loop
-        # just finished replacing items. Now we either add or remove items
-# remove additional items
-        overflow = len(extended_slice) - len(replacement)
-# if overflow < 0 we have items to add. If overflow > 0 we have items to remove
+        list_slice = self[index]
+        self._verify_slices_are_valid(index, list_slice, replacement)
+        # how many elements are being replaced vs. how many are being inserted/removed.
+        i = self._replace_corresponding_items_in_both_slices(index, list_slice, replacement)
+        overflow = len(list_slice) - len(replacement)
+        if overflow > 0:
+            self._remove_remaining_items_in_list_slice(i, overflow)
+        if overflow < 0:
+            self._add_remaining_items_in_replacement_slice(i, overflow, replacement)
+
+    def _remove_remaining_items_in_list_slice(self, i, overflow):
         while overflow > 0:
             item = self[i]
             if self._hook_fxn_aborts('pre-remove', item):
@@ -111,10 +104,34 @@ class List(list):
             super.().__delitem__(i)  # avoid hook call
             self._hook['post-remove'](item)
             overflow -= 1
-        # overflow < 0 equals items we must add to list using insert @ i
+
+    def _add_remaining_items_in_replacement_slice(self, i, overflow, replacement):
         while overflow < 0:
             replacingItem = re
-            
+
+    def _replace_corresponding_items_in_both_slices(self, index, list_slice, replacement):
+        """ for as long as both slices have an item at a given index, replace list_slice's 
+        respective item in the list with replacement's item. Operation will end after either slice
+        has been fully iterated over.
+        Returns: index just after replacement operation ends. Can begin insert or remove from there
+        """
+        i = index.start
+        slice_range = index.indices(len(self))
+        for i, _, replacingItem in zip(range(*slice_range), list_slice, replacement):
+            self[i] = replacingItem  # recursive call will trigger pre, post hooks
+            matches += 1
+            i += 1  # compensate for adding/removing additional items after for-loop
+        return i
+
+     def _verify_slices_are_valid(self, index, list_slice, replacement_slice):
+        if not type(index) == slice:
+            raise TypeError('list indices must be integer or slice, not ' + str(type(index)))
+        if index.step is not None and index.step != 1:
+            if len(list_slice) != len(replacement_slice):
+                raise ValueError('attempt to assign sequence of size ' str(len(replacement_slice))
+                                 'to extended slice of size ' str(len(list_slice)))
+
+           
             
 
 
