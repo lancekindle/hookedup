@@ -16,6 +16,19 @@ class TestList(unittest.TestCase):
     def raise_abort(self, *_):
         raise hookedup.Abort()
 
+    def test_clear(self):
+        self.list = list(range(4))
+        L = hookedup.List(self.list)
+        self.assertTrue(L == self.list)
+        L.clear()
+        self.assertTrue(len(L) == 0)
+        self.assertFalse(L == self.list)
+        hook = {'pre-remove': lambda *_: (self.increment_count() or self.raise_abort())}
+        L = hookedup.List(self.list, hook=hook)
+        self.assertTrue(L == self.list)
+        L.clear()
+        self.assertTrue(L == self.list)
+
     def test_extend(self):
         self.list = list(range(4))
         L = hookedup.List()

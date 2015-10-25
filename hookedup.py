@@ -31,7 +31,7 @@ class List(list):
             if self._hook_fxn_aborts('pre-remove', item):
                 i += 1  # compensate for not removing item @ i
             else:
-                super().__delitem__(item)
+                super().__delitem__(i)
                 self._hook['post-remove'](item)
 
     def extend(self, items):
