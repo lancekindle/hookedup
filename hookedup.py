@@ -106,13 +106,22 @@ class List(list):
         """
         self.extend(items)
 
+    def __imul__(self, multiplier):
+        if not isinstance(multiplier, int):
+            obj_type = str(type(multiplier)).replace('>', '').replace('<class ', '')
+            raise TypeError(obj_type + 'object cannot be interpreted as an integer')
+        if multiplier <= 0:
+            return self.clear()
+        original = list(self)
+        for i in range(1, multiplier):
+            self.extend(original)
+
     def __delitem__(self, index):
         self._verify_index_bounds(index)
         item = self[index]
         if not self._hook_fxn_aborts('pre-remove', item):
             super().__delitem__(index)
             self._hook['post-remove'](item)
-
 
     def __setitem__(self, index, replacement):
         """ Replace item at index in list with replacement, unless pre-replace function raises
