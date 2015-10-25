@@ -45,13 +45,24 @@ class TestList(unittest.TestCase):
         self.assertTrue(len(L2) == self.count == 4)
 
     def test_extend(self):
+        self.extend_or_iadd_testing('extend')
+
+    def test_iadd(self):
+        self.extend_or_iadd_testing('__iadd__')
+
+    def extend_or_iadd_testing(self, fxn_name):
         self.list = list(range(4))
         L = hookedup.List()
-        L.extend(self.list)
+        fxn = getattr(L, fxn_name)
+        fxn(self.list)
+        self.assertRaises(TypeError, fxn, 4)
+        self.assertTrue(self.list == L)
+        fxn([])
         self.assertTrue(self.list == L)
         hook = {'pre-add': lambda *_: (self.increment_count() or self.raise_abort())}
         L = hookedup.List(hook=hook)
-        L.extend(self.list)
+        fxn = getattr(L, fxn_name)
+        fxn(self.list)
         self.assertTrue(self.count == len(self.list))
         self.assertTrue(len(L) == 0)
 
