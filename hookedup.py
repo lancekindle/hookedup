@@ -38,8 +38,11 @@ class List(list):
         """ append items individually, calling pre and post-add functions. If pre-add function
         raises Abort, will not add that item.
         """
+        if not isinstance(items, collections.Iterable):
+            obj_type = str(type(items)).replace('>', '').replace('<class ', '')
+            raise TypeError(obj_type + ' object is not iterable')
         for item in items:
-            self.append(item)
+            self.append(item)  # recursive. Will trigger pre and post hooks in append fxn
 
     def _hook_fxn_aborts(self, hook_name, *args):
         """ run the named hook with supplied arguments, and return whether function raised Abort 
@@ -96,6 +99,12 @@ class List(list):
         if not self._hook_fxn_aborts('pre-remove', item):
             super().remove(item)
             self._hook['post-remove'](item)
+
+    def __iadd__(self, items):
+        """ in-place add items. It is the same as extend(), but we must implement both here so that
+        pre and post hooks are called properly
+        """
+        self.extend(items)
 
     def __delitem__(self, index):
         self._verify_index_bounds(index)
