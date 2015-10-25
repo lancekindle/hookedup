@@ -16,18 +16,33 @@ class TestList(unittest.TestCase):
     def raise_abort(self, *_):
         raise hookedup.Abort()
 
+    def test_delitem(self):
+        original = list(range(4))
+        self.list = list(original)
+        L = hookedup.List(self.list)
+        hook = {'pre-remove': lambda *_: (self.increment_count() or self.raise_abort())}
+        L2 = hookedup.List(self.list, hook=hook)
+        self.assertTrue(self.list == L == L2)
+        for _ in original:
+            del self.list[0]
+            del L[0]
+            del L2[0]
+        self.assertTrue([] == self.list == L)
+        self.assertTrue(L2 == original)
+        self.assertTrue(self.count == len(original))
+
     def test_clear(self):
         self.list = list(range(4))
         L = hookedup.List(self.list)
-        self.assertTrue(L == self.list)
-        L.clear()
-        self.assertTrue(len(L) == 0)
-        self.assertFalse(L == self.list)
         hook = {'pre-remove': lambda *_: (self.increment_count() or self.raise_abort())}
-        L = hookedup.List(self.list, hook=hook)
-        self.assertTrue(L == self.list)
+        L2 = hookedup.List(self.list, hook=hook)
+        self.assertTrue(L == self.list == L2)
         L.clear()
-        self.assertTrue(L == self.list)
+        self.assertTrue(len(L) == self.count == 0)
+        self.assertTrue(len(self.list) == len(L2) == 4)
+        L2.clear()
+        self.assertTrue(L2 == self.list)
+        self.assertTrue(len(L2) == self.count == 4)
 
     def test_extend(self):
         self.list = list(range(4))
