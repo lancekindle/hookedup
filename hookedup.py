@@ -105,6 +105,7 @@ class List(list):
         pre and post hooks are called properly
         """
         self.extend(items)
+        return self
 
     def __imul__(self, multiplier):
         if not isinstance(multiplier, int):
@@ -115,6 +116,7 @@ class List(list):
         original = list(self)
         for i in range(1, multiplier):
             self.extend(original)
+        return self
 
     def __delitem__(self, index):
         self._verify_index_bounds(index)
