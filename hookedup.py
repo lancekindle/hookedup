@@ -176,14 +176,31 @@ class List(list):
 
 
 
-class PreventOverwritingList:
+class PreventHookedupOverwriteReset:
+    """ inherit from this to prevent a hookedup List from being overwritten and/or reset. When user
+    attempts to set attribute of inheriting class, if attribute already on class is a hookedup
+    List, this raises AttributeError. User instead should use.clear() to attempt to clear attribute
+    and then update it accordingly.
+    for example:
+    Class Example(PreventHookedupOverwriteReset):
+        pass
+    a = A()
+    a.list = hookedup.List()  # a.list cannot be reset or set to anything else once it has been set
+                              # to hookedup.List
+    a.list = []  # raises AttributeError
+    a.list = hookedup.List()  # also raises AttributeError
+    """
+
     def __setattr__(self, attr_name, attr):
-        if attr_name == 'children':
-            if not isinstance(attr, List):
-                if not isinstance(attr, collections.Iterable):
-                    raise AttributeError('must set ' + attr_name + ' to an iterable')
-                hook = getattr(self, attr_name)._hook  # get other child's Hook Key
-                attr = List(attr, hook=hook)
+        try:
+            original = getattr(self, attr_name)
+        except AttributeError:
+            super().__setattr__(self, attr_name, attr)
+            return
+        for hookedType in (List,):
+            if isinstance(original, hookedType):
+                raise AttributeError('Overwriting attribute "' + attr_name + '" of type ' +
+                                     str(hookedType) + 'prohibited')
         super().__setattr__(attr_name, attr)
 
 
