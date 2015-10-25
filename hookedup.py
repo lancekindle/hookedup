@@ -52,7 +52,7 @@ class List(list):
             return True
         return False
 
-    def _verify_index_bounds(self, index, fxn_name='list'):
+    def _verify_index_bounds(self, index, fxn_name='list assignment'):
         """ determine from provided index if operation would trigger index error. If it does, raise
         IndexError. If calling from a pop function, set optional fxn_name to "pop"
         params:
@@ -68,16 +68,14 @@ class List(list):
     def insert(self, index, item):
         """ insert item into list at given index, unless pre-add function raises Abort. """
         if self._hook_fxn_aborts('pre-add', item):
-            return
-        super().insert(index, item)
-        self._hook['post-add'](item)
+            super().insert(index, item)
+            self._hook['post-add'](item)
 
     def append(self, item):
         """ append item to end of list, unless pre-add function raises Abort """
-        if self._hook_fxn_aborts('pre-add', item):
-            return
-        super().append(item)
-        self._hook['post-add'](item)
+        if not self._hook_fxn_aborts('pre-add', item):
+            super().append(item)
+            self._hook['post-add'](item)
         
     def pop(self, index=-1):
         """ Pop item @ index (or end of list if not supplied). If pre-remove function raises Abort,
@@ -95,10 +93,17 @@ class List(list):
         """ remove first instance of item from list, unless pre-remove function raises Abort """
         if item not in self:
             raise ValueError('list.remove(x): x not in list')
-        if self._hook_fxn_aborts('pre-remove', item):
-            return
-        super().remove(item)
-        self._hook['post-remove'](item)
+        if not self._hook_fxn_aborts('pre-remove', item):
+            super().remove(item)
+            self._hook['post-remove'](item)
+
+    def __delitem__(self, index):
+        self._verify_index_bounds(index)
+        item = self[index]
+        if not self._hook_fxn_aborts('pre-remove', item):
+            super().__delitem__(index)
+            self._hook['post-remove'](item)
+
 
     def __setitem__(self, index, replacement):
         """ Replace item at index in list with replacement, unless pre-replace function raises
