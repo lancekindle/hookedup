@@ -16,6 +16,38 @@ class TestList(unittest.TestCase):
     def raise_abort(self, *_):
         raise hookedup.Abort()
 
+    def test_iadd(self):
+        original = list(range(4))
+        self.list = list(original)
+        L = hookedup.List()
+        L += self.list
+        self.assertTrue(L == self.list)
+        self.assertTrue(isinstance(L, hookedup.List))
+        hold_only_4_items = lambda *_: (len(self.L2) >= 4 and (self.increment_count() or
+                                self.raise_abort()))
+        hook = {'pre-add': hold_only_4_items}
+        self.L2 = hookedup.List(hook=hook)
+        self.L2 += self.list
+        self.assertTrue(self.L2 == L)
+        self.L2 += self.list
+        self.assertTrue(self.L2 == L == original)
+        self.assertTrue(len(self.L2) == len(original) == self.count)
+
+    def test_imul(self):
+        original = list(range(4))
+        self.list = list(original)
+        L = hookedup.List(original)
+        hold_only_4_items = lambda *_: (len(self.L2) >= 4 and (self.increment_count() or
+                                self.raise_abort()))
+        hook = {'pre-add': hold_only_4_items}
+        self.L2 = hookedup.List(original, hook=hook)
+        self.list *= 3
+        L *= 3
+        self.L2 *= 3
+        self.assertTrue(L == self.list)
+        self.assertTrue(len(original) * 2 == self.count)
+        self.assertTrue(original == self.L2)
+
     def test_delitem(self):
         original = list(range(4))
         self.list = list(original)
@@ -45,24 +77,16 @@ class TestList(unittest.TestCase):
         self.assertTrue(len(L2) == self.count == 4)
 
     def test_extend(self):
-        self.extend_or_iadd_testing('extend')
-
-    def test_iadd(self):
-        self.extend_or_iadd_testing('__iadd__')
-
-    def extend_or_iadd_testing(self, fxn_name):
         self.list = list(range(4))
         L = hookedup.List()
-        fxn = getattr(L, fxn_name)
-        fxn(self.list)
-        self.assertRaises(TypeError, fxn, 4)
+        L.extend(self.list)
+        self.assertRaises(TypeError, L.extend, 4)
         self.assertTrue(self.list == L)
-        fxn([])
+        L.extend([])
         self.assertTrue(self.list == L)
         hook = {'pre-add': lambda *_: (self.increment_count() or self.raise_abort())}
         L = hookedup.List(hook=hook)
-        fxn = getattr(L, fxn_name)
-        fxn(self.list)
+        L.extend(self.list)
         self.assertTrue(self.count == len(self.list))
         self.assertTrue(len(L) == 0)
 
