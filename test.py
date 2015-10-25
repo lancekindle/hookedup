@@ -16,6 +16,17 @@ class TestList(unittest.TestCase):
     def raise_abort(self, *_):
         raise hookedup.Abort()
 
+    def test_extend(self):
+        self.list = list(range(4))
+        L = hookedup.List()
+        L.extend(self.list)
+        self.assertTrue(self.list == L)
+        hook = {'pre-add': lambda *_: (self.increment_count() or self.raise_abort())}
+        L = hookedup.List(hook=hook)
+        L.extend(self.list)
+        self.assertTrue(self.count == len(self.list))
+        self.assertTrue(len(L) == 0)
+
     def test_list_inits_with_empty_hook_or_no_hook(self):
         L = hookedup.List(hook={})
         L = hookedup.List()
@@ -72,7 +83,6 @@ class TestList(unittest.TestCase):
         L = hookedup.List(self.list)
         self.assertTrue(type(L) == hookedup.List)
         self.assertTrue(self.list == L)
-        self.assertTrue(len(self.list) == len(L))
         slices = [slice(1,3), slice(1,3,2), slice(4, 0, -1)]
         replacements = [[], [-1,-2], [-3], [-4, -5, -6], [-7, -9, -9, -10, -11]]
         successes = 0
