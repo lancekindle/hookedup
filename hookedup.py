@@ -192,20 +192,21 @@ class List(list):
         return i
 
     def _remove_remaining_items_in_list_slice(self, i, overflow):
-        """ remove overflow # of items from list, starting at index i, and call pre-remove and
-        post-remove functions. Will not remove item if pre-remove raises Abort
+        """ attempt to remove overflow # of items from list, starting at index i, and call
+        pre-remove and post-remove functions. Will not remove item if pre-remove raises Abort
         """
-        while overflow > 0:
+        for _ in range(overflow):
             item = self[i]
             if self._hook_fxn_aborts('pre-remove', item):
-                i += 1  # avoid visiting same item
+                i += 1  # avoid removal attempt of same item
                 continue
             super().__delitem__(i)
             self._hook['post-remove'](item)
-            overflow -= 1
 
     def _add_remaining_items_in_replacement_slice(self, i, overflow, replacement):
-        """ insert remaining items in replacement slice to self list, unless pre-add aborts """
+        """ insert remaining items in replacement slice to self list, unless pre-add aborts.
+        overflow: a negative number whose absolute value indicate the number of items to insert
+        """
         for repl_index in range(overflow, 0, 1):
             item = replacement[repl_index]
             if not self._hook_fxn_aborts('pre-add', item):
