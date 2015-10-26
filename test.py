@@ -52,7 +52,9 @@ class TestAllListOperations(unittest.TestCase):
 
 
 class TestHookedupList(unittest.TestCase):
-    """ test implemented methods of hookedup.List """
+    """ test implemented methods of hookedup.List. Including that pre- and post- hooks are called
+    for each hooked operation. Also verify that aborting operation works as expected
+    """
 
     def setUp(self):
         self.count = 0
@@ -120,9 +122,21 @@ class TestHookedupList(unittest.TestCase):
         self.assertTrue(isinstance(L2, hookedup.List))
 
     def test_delitem_slice(self):
+        """ verify that deleting slices in hooked.List matches list behavior. Also verify that
+        aborted slice deletion does not delete the abort-deleted item
+        """
+        hook = {'pre-remove': self.raise_abort} 
         slices = [slice(1,2), slice(1,3), slice(1,4,2), slice(0,5,2), slice(4, 0, -1)]
-
-
+        for s in slices:
+            self.setUp()  # reset lists and count
+            L2 = hookedup.List(self.original, hook=hook)
+            self.list.__delitem__(s)
+            self.L.__delitem__(s)
+            L2.__delitem__(s)
+            difference = len(self.original) - len(self.list)
+            self.assertTrue(self.list == self.L)
+            self.assertTrue(L2 == self.original)
+            self.assertTrue(difference == self.count)
 
     def test_clear(self):
         hook = {'pre-remove': lambda *_: (self.increment_count() or self.raise_abort())}
