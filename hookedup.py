@@ -134,7 +134,7 @@ class List(list):
         list_slice = self[index]  # trigger standard error if index is not slice
         last_index = self._replace_corresponding_items_in_both_slices(index, list_slice, [])
         overflow = len(list_slice)
-        self._remove_remaining_items_in_list_slice(last_index, overflow)
+        self._remove_remaining_items_in_list_slice(index, last_index, overflow)
 
     def __setitem__(self, index, replacement):
         """ Replace item at index in list with replacement, unless pre-replace function raises
@@ -161,7 +161,7 @@ class List(list):
                                                                       replacement)
         overflow = len(list_slice) - len(replacement)
         if overflow > 0:
-            self._remove_remaining_items_in_list_slice(last_index, overflow)
+            self._remove_remaining_items_in_list_slice(index, last_index, overflow)
         if overflow < 0:
             self._add_remaining_items_in_replacement_slice(last_index, overflow, replacement)
 
@@ -174,6 +174,8 @@ class List(list):
         if not type(index) == slice:
             raise TypeError('list indices must be integer or slice, not ' + str(type(index)))
         if index.step is not None and index.step != 1:
+            if index.step == 0:
+                raise ValueError('slice step cannot be zero')
             if len(list_slice) != len(replacement_slice):
                 raise ValueError('attempt to assign sequence of size ' + str(len(replacement_slice))
                                  + ' to extended slice of size ' + str(len(list_slice)))
@@ -191,17 +193,22 @@ class List(list):
             i += 1  # compensate for adding/removing additional items after for-loop
         return i
 
-    def _remove_remaining_items_in_list_slice(self, i, overflow):
+    def _remove_remaining_items_in_list_slice(self, islice, i, overflow):
         """ attempt to remove overflow # of items from list, starting at index i, and call
         pre-remove and post-remove functions. Will not remove item if pre-remove raises Abort
         """
+        step = islice.step or 1
         for _ in range(overflow):
             item = self[i]
             if self._hook_fxn_aborts('pre-remove', item):
-                i += 1  # avoid removal attempt of same item
+                i += step  # avoid removal attempt of same item
                 continue
             super().__delitem__(i)
             self._hook['post-remove'](item)
+            if step > 0:
+                i += step - 1  # normally 0, but compensdated for larger step-sizes
+            else:
+                i += step  # negative steps do not need compensation for removing at an index
 
     def _add_remaining_items_in_replacement_slice(self, i, overflow, replacement):
         """ insert remaining items in replacement slice to self list, unless pre-add aborts.
@@ -213,7 +220,6 @@ class List(list):
                 super().insert(i, item)
                 i += 1
                 self._hook['post-add'](item)
-
 
 
 class PreventHookedupOverwriteReset:
