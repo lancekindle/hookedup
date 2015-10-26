@@ -2,8 +2,57 @@ import unittest
 import hookedup
 import random
 
+class TestListUnimplementedParts(unittest.TestCase):
+    """ verify that these unimplemented methods do not return a hookedup.List instance; only a list
+    """
 
-class TestList(unittest.TestCase):
+    def setUp(self):
+        self.original = list(range(4))
+        self.L = hookedup.List(self.original)
+        self.list = list(self.original)
+
+    def test_L_is_hookedup_instance(self):
+        self.assertTrue(isinstance(self.L, hookedup.List))
+
+    def test_list_add_returns_normal_list(self):
+        """ verify that addition in both arrangements produces a normal list """
+        L = self.L + self.original
+        L2 = self.original + self.L
+        self.assertFalse(isinstance(L, hookedup.List))
+        self.assertFalse(isinstance(L2, hookedup.List))
+        self.assertTrue(isinstance(L, list))
+        self.assertTrue(isinstance(L2, list))
+
+    def test_list_multiply_returns_normal_list(self):
+        """ verify that multiplication in multiple arrangments always produces a normal list """
+        L = self.L * 2
+        L2 = 2 * self.L
+        self.assertFalse(isinstance(L, hookedup.List))
+        self.assertFalse(isinstance(L2, hookedup.List))
+        self.assertTrue(isinstance(L, list))
+        self.assertTrue(isinstance(L2, list))
+
+    def test_copy_returns_normal_list(self):
+        L = self.L.copy()
+        self.assertTrue(isinstance(L, list))
+        self.assertFalse(isinstance(L, hookedup.List))
+
+
+
+class TestAllListOperations(unittest.TestCase):
+    """ verify that normal operation and exceptions are the same between hookedup.List and list """
+    
+    def setUp(self):
+        self.original = list(range(4))
+        self.L = hookedup.List(self.original)
+        self.list = list(self.original)
+
+    def test_lists_are_equal(self):
+        self.assertTrue(self.L == self.original == self.list)
+
+
+class TestHookedupList(unittest.TestCase):
+    """ test implemented methods of hookedup.List """
 
     def setUp(self):
         self.count = 0
@@ -32,6 +81,8 @@ class TestList(unittest.TestCase):
         self.L2 += self.list
         self.assertTrue(self.L2 == L == original)
         self.assertTrue(len(self.L2) == len(original) == self.count)
+        self.assertTrue(isinstance(self.L2, hookedup.List))
+        self.assertTrue(isinstance(L, hookedup.List))
 
     def test_imul(self):
         original = list(range(4))
@@ -47,6 +98,8 @@ class TestList(unittest.TestCase):
         self.assertTrue(L == self.list)
         self.assertTrue(len(original) * 2 == self.count)
         self.assertTrue(original == self.L2)
+        self.assertTrue(isinstance(L, hookedup.List))
+        self.assertTrue(isinstance(self.L2, hookedup.List))
 
     def test_delitem(self):
         original = list(range(4))
