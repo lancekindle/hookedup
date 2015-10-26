@@ -204,8 +204,9 @@ class List(list):
 class PreventHookedupOverwriteReset:
     """ inherit from this to prevent a hookedup List from being overwritten and/or reset. When user
     attempts to set attribute of inheriting class, if attribute already on class is a hookedup
-    List, this raises AttributeError. User instead should use.clear() to attempt to clear attribute
-    and then update it accordingly.
+    List, this raises AttributeError (unless it is the same object, as a case would be when using
+    *= or +=). User instead should use.clear() to attempt to clear attribute and then update it 
+    accordingly.
     for example:
     Class Example(PreventHookedupOverwriteReset):
         pass
@@ -220,7 +221,10 @@ class PreventHookedupOverwriteReset:
         try:
             original = getattr(self, attr_name)
         except AttributeError:
-            super().__setattr__(self, attr_name, attr)
+            super().__setattr__(attr_name, attr)  # allow setting attribute first time
+            return
+        if original is attr:
+            super().__setattr__(attr_name, attr)  # allows __iadd__ (+=) and __imul__ (*=) to work
             return
         for hookedType in (List,):
             if isinstance(original, hookedType):
