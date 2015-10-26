@@ -184,8 +184,8 @@ class List(list):
         has been fully iterated over.
         Returns: index just after replacement operation ends. Can begin insert or remove from there
         """
-        i = index.start
         slice_range = index.indices(len(self))
+        i = slice_range[0]  # normally index.start, but adjusted to list size
         for i, _, replacingItem in zip(range(*slice_range), list_slice, replacement):
             self[i] = replacingItem  # recursive __setitem__ call will trigger pre, post hooks
             i += 1  # compensate for adding/removing additional items after for-loop
