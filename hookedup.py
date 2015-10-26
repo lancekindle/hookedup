@@ -119,11 +119,22 @@ class List(list):
         return self
 
     def __delitem__(self, index):
-        self._verify_index_bounds(index)
-        item = self[index]
-        if not self._hook_fxn_aborts('pre-remove', item):
-            super().__delitem__(index)
-            self._hook['post-remove'](item)
+        """ If index is an integer, delete item @ given index, calling pre and post remove hooks
+        appropriately. If index is a slice, remove specified index range, calling pre and post
+        hooks for each item as it removes them. Due to the delitem's similarity to setitem, I have
+        borrowed several functions used in setitem to only delete the range specified by slice
+        """
+        if type(index) == int:
+            self._verify_index_bounds(index)
+            item = self[index]
+            if not self._hook_fxn_aborts('pre-remove', item):
+                super().__delitem__(index)
+                self._hook['post-remove'](item)
+            return
+        list_slice = self[index]  # trigger standard error if index is not slice
+        last_index = self._replace_corresponding_items_in_both_slices(index, list_slice, [])
+        overflow = len(list_slice)
+        self._remove_remaining_items_in_list_slice(last_index, overflow)
 
     def __setitem__(self, index, replacement):
         """ Replace item at index in list with replacement, unless pre-replace function raises
@@ -132,14 +143,17 @@ class List(list):
         specifies more items to add, add additional items individually, calling pre and post-add 
         functions for each. If slicing specifies items to remove from list, remove items
         individually, calling pre and post-remove functions for each.
+        self[0:3] = [0,1]  # replace two items on list (index 0 & 1) with two items
+        self[0:3] = [0]  # replace one item on list (index 0), and remove other item (index 1) from list
+        self[0:3] = [0,1,2]  # replace two items on list (index 0 & 1) with first two items on
+                    list, then insert last item (2) into list @ end of replacement index (index 2)
         """
         if type(index) == int:
             self._verify_index_bounds(index)
             item = self[index]
-            if self._hook_fxn_aborts('pre-replace', item, replacement):
-                return
-            super().__setitem__(index, replacement)
-            self._hook['post-replace'](item, replacement)
+            if not self._hook_fxn_aborts('pre-replace', item, replacement):
+                super().__setitem__(index, replacement)
+                self._hook['post-replace'](item, replacement)
             return
         list_slice = self[index]  # trigger standard error if index is not slice
         self._verify_slices_are_valid(index, list_slice, replacement)
