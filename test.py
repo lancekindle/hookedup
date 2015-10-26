@@ -56,8 +56,17 @@ class TestHookedupList(unittest.TestCase):
 
     def setUp(self):
         self.count = 0
+        self.original = list(range(4))
+        self.list = list(self.original)
+        self.L = hookedup.List(self.original)
         self.post_hooks = ['post-add', 'post-replace', 'post-remove']
         self.pre_hooks = ['pre-add', 'pre-replace', 'pre-remove']
+
+    def test_lists_are_equal_and_correct_instance(self):
+        self.assertTrue(self.L == self.original == self.list)
+        self.assertTrue(len(self.original) == 4)
+        self.assertTrue(isinstance(self.L, hookedup.List))
+        self.assertFalse(isinstance(self.list, hookedup.List))
         
     def increment_count(self, *_):
         self.count += 1
@@ -66,8 +75,6 @@ class TestHookedupList(unittest.TestCase):
         raise hookedup.Abort()
 
     def test_iadd(self):
-        original = list(range(4))
-        self.list = list(original)
         L = hookedup.List()
         L += self.list
         self.assertTrue(L == self.list)
@@ -79,58 +86,56 @@ class TestHookedupList(unittest.TestCase):
         self.L2 += self.list
         self.assertTrue(self.L2 == L)
         self.L2 += self.list
-        self.assertTrue(self.L2 == L == original)
-        self.assertTrue(len(self.L2) == len(original) == self.count)
+        self.assertTrue(self.L2 == L == self.original)
+        self.assertTrue(len(self.L2) == len(self.original) == self.count)
         self.assertTrue(isinstance(self.L2, hookedup.List))
         self.assertTrue(isinstance(L, hookedup.List))
 
     def test_imul(self):
-        original = list(range(4))
-        self.list = list(original)
-        L = hookedup.List(original)
         hold_only_4_items = lambda *_: (len(self.L2) >= 4 and (self.increment_count() or
                                 self.raise_abort()))
         hook = {'pre-add': hold_only_4_items}
-        self.L2 = hookedup.List(original, hook=hook)
+        self.L2 = hookedup.List(self.original, hook=hook)
         self.list *= 3
-        L *= 3
+        self.L *= 3
         self.L2 *= 3
-        self.assertTrue(L == self.list)
-        self.assertTrue(len(original) * 2 == self.count)
-        self.assertTrue(original == self.L2)
-        self.assertTrue(isinstance(L, hookedup.List))
+        self.assertTrue(self.L == self.list)
+        self.assertTrue(len(self.original) * 2 == self.count)
+        self.assertTrue(self.original == self.L2)
+        self.assertTrue(isinstance(self.L, hookedup.List))
         self.assertTrue(isinstance(self.L2, hookedup.List))
 
-    def test_delitem(self):
-        original = list(range(4))
-        self.list = list(original)
-        L = hookedup.List(self.list)
+    def test_delitem_int_index(self):
         hook = {'pre-remove': lambda *_: (self.increment_count() or self.raise_abort())}
         L2 = hookedup.List(self.list, hook=hook)
-        self.assertTrue(self.list == L == L2)
-        for _ in original:
+        self.assertTrue(self.list == self.L == L2)
+        for _ in self.original:
             del self.list[0]
-            del L[0]
+            del self.L[0]
             del L2[0]
-        self.assertTrue([] == self.list == L)
-        self.assertTrue(L2 == original)
-        self.assertTrue(self.count == len(original))
+        self.assertTrue([] == self.list == self.L)
+        self.assertTrue(L2 == self.original)
+        self.assertTrue(self.count == len(self.original))
+        self.assertTrue(isinstance(self.L, hookedup.List))
+        self.assertTrue(isinstance(L2, hookedup.List))
+
+    def test_delitem_slice(self):
+        slices = [slice(1,2), slice(1,3), slice(1,4,2), slice(0,5,2), slice(4, 0, -1)]
+
+
 
     def test_clear(self):
-        self.list = list(range(4))
-        L = hookedup.List(self.list)
         hook = {'pre-remove': lambda *_: (self.increment_count() or self.raise_abort())}
         L2 = hookedup.List(self.list, hook=hook)
-        self.assertTrue(L == self.list == L2)
-        L.clear()
-        self.assertTrue(len(L) == self.count == 0)
+        self.assertTrue(self.L == self.list == L2)
+        self.L.clear()
+        self.assertTrue(len(self.L) == self.count == 0)
         self.assertTrue(len(self.list) == len(L2) == 4)
         L2.clear()
         self.assertTrue(L2 == self.list)
         self.assertTrue(len(L2) == self.count == 4)
 
     def test_extend(self):
-        self.list = list(range(4))
         L = hookedup.List()
         L.extend(self.list)
         self.assertRaises(TypeError, L.extend, 4)
