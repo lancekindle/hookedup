@@ -76,13 +76,16 @@ class TestHookedupList(unittest.TestCase):
     def raise_abort(self, *_):
         raise hookedup.Abort()
 
+    def increment_and_abort(self, *_):
+        self.increment_count()
+        self.raise_abort()
+
     def test_iadd(self):
         L = hookedup.List()
         L += self.list
         self.assertTrue(L == self.list)
         self.assertTrue(isinstance(L, hookedup.List))
-        hold_only_4_items = lambda *_: (len(self.L2) >= 4 and (self.increment_count() or
-                                self.raise_abort()))
+        hold_only_4_items = lambda *_: (len(self.L2) >= 4 and self.increment_and_abort())
         hook = {'pre-add': hold_only_4_items}
         self.L2 = hookedup.List(hook=hook)
         self.L2 += self.list
@@ -94,8 +97,7 @@ class TestHookedupList(unittest.TestCase):
         self.assertTrue(isinstance(L, hookedup.List))
 
     def test_imul(self):
-        hold_only_4_items = lambda *_: (len(self.L2) >= 4 and (self.increment_count() or
-                                self.raise_abort()))
+        hold_only_4_items = lambda *_: (len(self.L2) >= 4 and self.increment_and_abort())
         hook = {'pre-add': hold_only_4_items}
         self.L2 = hookedup.List(self.original, hook=hook)
         self.list *= 3
@@ -108,7 +110,7 @@ class TestHookedupList(unittest.TestCase):
         self.assertTrue(isinstance(self.L2, hookedup.List))
 
     def test_delitem_int_index(self):
-        hook = {'pre-remove': lambda *_: (self.increment_count() or self.raise_abort())}
+        hook = {'pre-remove': self.increment_and_abort}
         L2 = hookedup.List(self.list, hook=hook)
         self.assertTrue(self.list == self.L == L2)
         for _ in self.original:
@@ -125,8 +127,9 @@ class TestHookedupList(unittest.TestCase):
         """ verify that deleting slices in hooked.List matches list behavior. Also verify that
         aborted slice deletion does not delete the abort-deleted item
         """
-        hook = {'pre-remove': self.raise_abort} 
-        slices = [slice(1,2), slice(1,3), slice(1,4,2), slice(0,5,2), slice(4, 0, -1)]
+        hook = {'pre-remove': self.increment_and_abort} 
+        slices = [slice(1,2), slice(1,3), slice(1,4,2), slice(0,5,2), slice(4, 0, -1), 
+                  slice(3, None, -1), slice(3, None, -2)]
         for s in slices:
             self.setUp()  # reset lists and count
             L2 = hookedup.List(self.original, hook=hook)
@@ -139,7 +142,7 @@ class TestHookedupList(unittest.TestCase):
             self.assertTrue(difference == self.count)
 
     def test_clear(self):
-        hook = {'pre-remove': lambda *_: (self.increment_count() or self.raise_abort())}
+        hook = {'pre-remove': self.increment_and_abort}
         L2 = hookedup.List(self.list, hook=hook)
         self.assertTrue(self.L == self.list == L2)
         self.L.clear()
@@ -156,7 +159,7 @@ class TestHookedupList(unittest.TestCase):
         self.assertTrue(self.list == L)
         L.extend([])
         self.assertTrue(self.list == L)
-        hook = {'pre-add': lambda *_: (self.increment_count() or self.raise_abort())}
+        hook = {'pre-add': self.increment_and_abort}
         L = hookedup.List(hook=hook)
         L.extend(self.list)
         self.assertTrue(self.count == len(self.list))
