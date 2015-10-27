@@ -32,7 +32,7 @@ class List(list):
                 i += 1  # compensate for not removing item @ i
             else:
                 super().__delitem__(i)
-                self._hook['post_remove'](item)
+                self._call_post_hook_fxn('post_remove', item)
 
     def extend(self, items):
         """ append items individually, calling pre and post_add functions. If pre_add function
@@ -43,6 +43,10 @@ class List(list):
             raise TypeError(obj_type + ' object is not iterable')
         for item in items:
             self.append(item)  # recursive. Will trigger pre and post hooks in append fxn
+
+    def _call_post_hook_fxn(self, hook_name, *args):
+        """ run the named hook with supplied arguments """
+        self._hook[hook_name](*args)
 
     def _hook_fxn_aborts(self, hook_name, *args):
         """ run the named hook with supplied arguments, and return whether function raised Abort 
@@ -73,13 +77,13 @@ class List(list):
         """ insert item into list at given index, unless pre_add function raises Abort. """
         if self._hook_fxn_aborts('pre_add', item):
             super().insert(index, item)
-            self._hook['post_add'](item)
+            self._call_post_hook_fxn('post_add', item)
 
     def append(self, item):
         """ append item to end of list, unless pre_add function raises Abort """
         if not self._hook_fxn_aborts('pre_add', item):
             super().append(item)
-            self._hook['post_add'](item)
+            self._call_post_hook_fxn('post_add', item)
         
     def pop(self, index=-1):
         """ Pop item @ index (or end of list if not supplied). If pre_remove function raises Abort,
@@ -90,7 +94,7 @@ class List(list):
         if self._hook_fxn_aborts('pre_remove', item):
             return item  # return expected value even in Abort: return item w/o removing from list
         item = super().pop(index)
-        self._hook['post_remove'](item)
+        self._call_post_hook_fxn('post_remove', item)
         return item
 
     def remove(self, item):
@@ -99,7 +103,7 @@ class List(list):
             raise ValueError('list.remove(x): x not in list')
         if not self._hook_fxn_aborts('pre_remove', item):
             super().remove(item)
-            self._hook['post_remove'](item)
+            self._call_post_hook_fxn('post_remove', item)
 
     def __iadd__(self, items):
         """ in-place add items. It is the same as extend(), but we must implement both here so that
@@ -130,7 +134,7 @@ class List(list):
             item = self[index]
             if not self._hook_fxn_aborts('pre_remove', item):
                 super().__delitem__(index)
-                self._hook['post_remove'](item)
+                self._call_post_hook_fxn('post_remove', item)
             return
         list_slice = self[index]  # trigger standard error if index is not slice
         last_index = self._replace_corresponding_items_in_both_slices(index, list_slice, [])
@@ -154,7 +158,7 @@ class List(list):
             item = self[index]
             if not self._hook_fxn_aborts('pre_replace', item, replacement):
                 super().__setitem__(index, replacement)
-                self._hook['post_replace'](item, replacement)
+                self._call_post_hook_fxn('post_replace', item, replacement)
             return
         list_slice = self[index]  # trigger standard error if index is not slice
         replacement = list(replacement)  # all fxns below expect a list-like object.
@@ -206,7 +210,7 @@ class List(list):
                 i += step  # avoid removal attempt of same item
                 continue
             super().__delitem__(i)
-            self._hook['post_remove'](item)
+            self._call_post_hook_fxn('post_remove', item)
             if step > 0:
                 i += step - 1  # normally 0, but compensdated for larger step-sizes
             else:
@@ -221,7 +225,7 @@ class List(list):
             if not self._hook_fxn_aborts('pre_add', item):
                 super().insert(i, item)
                 i += 1
-                self._hook['post_add'](item)
+                self._call_post_hook_fxn('post_add', item)
 
 
 class PreventHookedupOverwriteReset:
