@@ -156,6 +156,7 @@ class List(list):
                 self._hook['post-replace'](item, replacement)
             return
         list_slice = self[index]  # trigger standard error if index is not slice
+        replacement = list(replacement)  # all fxns below expect a list-like object.
         self._verify_slices_are_valid(index, list_slice, replacement)
         last_index = self._replace_corresponding_items_in_both_slices(index, list_slice, 
                                                                       replacement)
