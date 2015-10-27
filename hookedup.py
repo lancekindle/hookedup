@@ -18,8 +18,7 @@ class List(list):
         super().__init__(*args)
         empty_func = lambda: lambda *_, **__: None
         self._hook = collections.defaultdict(empty_func)
-        if 'hook' in kwargs:
-            self._hook.update(kwargs['hook'])
+        self._hook.update(kwargs)
 
     def clear(self):
         """ remove items from list individually, starting at index 0. Call pre and post_remove

@@ -86,8 +86,7 @@ class TestHookedupList(unittest.TestCase):
         self.assertTrue(L == self.list)
         self.assertTrue(isinstance(L, hookedup.List))
         hold_only_4_items = lambda *_: (len(self.L2) >= 4 and self.increment_and_abort())
-        hook = {'pre_add': hold_only_4_items}
-        self.L2 = hookedup.List(hook=hook)
+        self.L2 = hookedup.List(pre_add=hold_only_4_items)
         self.L2 += self.list
         self.assertTrue(self.L2 == L)
         self.L2 += self.list
@@ -98,8 +97,7 @@ class TestHookedupList(unittest.TestCase):
 
     def test_imul(self):
         hold_only_4_items = lambda *_: (len(self.L2) >= 4 and self.increment_and_abort())
-        hook = {'pre_add': hold_only_4_items}
-        self.L2 = hookedup.List(self.original, hook=hook)
+        self.L2 = hookedup.List(self.original, pre_add=hold_only_4_items)
         self.list *= 3
         self.L *= 3
         self.L2 *= 3
@@ -110,8 +108,7 @@ class TestHookedupList(unittest.TestCase):
         self.assertTrue(isinstance(self.L2, hookedup.List))
 
     def test_delitem_int_index(self):
-        hook = {'pre_remove': self.increment_and_abort}
-        L2 = hookedup.List(self.list, hook=hook)
+        L2 = hookedup.List(self.list, pre_remove=self.increment_and_abort)
         self.assertTrue(self.list == self.L == L2)
         for _ in self.original:
             del self.list[0]
@@ -127,12 +124,11 @@ class TestHookedupList(unittest.TestCase):
         """ verify that deleting slices in hooked.List matches list behavior. Also verify that
         aborted slice deletion does not delete the abort-deleted item
         """
-        hook = {'pre_remove': self.increment_and_abort} 
         slices = [slice(1,2), slice(1,3), slice(1,4,2), slice(0,5,2), slice(4, 0, -1), 
                   slice(3, None, -1), slice(3, None, -2)]
         for s in slices:
             self.setUp()  # reset lists and count
-            L2 = hookedup.List(self.original, hook=hook)
+            L2 = hookedup.List(self.original, pre_remove=self.increment_and_abort)
             self.list.__delitem__(s)
             self.L.__delitem__(s)
             L2.__delitem__(s)
@@ -142,8 +138,7 @@ class TestHookedupList(unittest.TestCase):
             self.assertTrue(difference == self.count)
 
     def test_clear(self):
-        hook = {'pre_remove': self.increment_and_abort}
-        L2 = hookedup.List(self.list, hook=hook)
+        L2 = hookedup.List(self.list, pre_remove=self.increment_and_abort)
         self.assertTrue(self.L == self.list == L2)
         self.L.clear()
         self.assertTrue(len(self.L) == self.count == 0)
@@ -159,14 +154,13 @@ class TestHookedupList(unittest.TestCase):
         self.assertTrue(self.list == L)
         L.extend([])
         self.assertTrue(self.list == L)
-        hook = {'pre_add': self.increment_and_abort}
-        L = hookedup.List(hook=hook)
+        L = hookedup.List(pre_add=self.increment_and_abort)
         L.extend(self.list)
         self.assertTrue(self.count == len(self.list))
         self.assertTrue(len(L) == 0)
 
     def test_list_inits_with_empty_hook_or_no_hook(self):
-        L = hookedup.List(hook={})
+        L = hookedup.List(**{})
         L = hookedup.List()
 
     def test_random_valid_hooks(self):
@@ -177,7 +171,7 @@ class TestHookedupList(unittest.TestCase):
             hook_event = random.choice(valid_hooks)
             valid_hooks.remove(hook_event)
             hooks[hook_event] = self.increment_count
-            L = hookedup.List(hook=hooks)
+            L = hookedup.List(**hooks)
             self.trigger_all_hooks(L)
             self.assertTrue(count == self.count)
             count += 1
@@ -204,12 +198,12 @@ class TestHookedupList(unittest.TestCase):
         premade_list = [0]  # compensate for hookup.List that prevents adding item
         for pre, post in zip(self.pre_hooks, self.post_hooks):
             hook = {pre: self.raise_abort, post: self.increment_count}
-            L = hookedup.List(premade_list, hook=hook)
+            L = hookedup.List(premade_list, **hook)
             self.trigger_all_hooks(L)
             self.assertTrue(count == self.count)
             # verify post hook would run correctly if pre hook didn't abort
             hook[pre] = lambda *_: None
-            L = hookedup.List(premade_list, hook=hook)
+            L = hookedup.List(premade_list, **hook)
             self.trigger_all_hooks(L)
             self.assertTrue(self.count == count + 1)
             count += 1
