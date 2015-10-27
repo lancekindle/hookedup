@@ -85,27 +85,27 @@ class TestHookedupList(unittest.TestCase):
         L += self.list
         self.assertTrue(L == self.list)
         self.assertTrue(isinstance(L, hookedup.List))
-        hold_only_4_items = lambda *_: (len(self.L2) >= 4 and self.increment_and_abort())
-        self.L2 = hookedup.List(pre_add=hold_only_4_items)
-        self.L2 += self.list
-        self.assertTrue(self.L2 == L)
-        self.L2 += self.list
-        self.assertTrue(self.L2 == L == self.original)
-        self.assertTrue(len(self.L2) == len(self.original) == self.count)
-        self.assertTrue(isinstance(self.L2, hookedup.List))
+        hold_only_4_items = lambda L2, *_: (len(L2) >= 4 and self.increment_and_abort())
+        L2 = hookedup.List(pre_add=hold_only_4_items)
+        L2 += self.list
+        self.assertTrue(L2 == L)
+        L2 += self.list
+        self.assertTrue(L2 == L == self.original)
+        self.assertTrue(len(L2) == len(self.original) == self.count)
+        self.assertTrue(isinstance(L2, hookedup.List))
         self.assertTrue(isinstance(L, hookedup.List))
 
     def test_imul(self):
-        hold_only_4_items = lambda *_: (len(self.L2) >= 4 and self.increment_and_abort())
-        self.L2 = hookedup.List(self.original, pre_add=hold_only_4_items)
+        hold_only_4_items = lambda L2, *_: (len(L2) >= 4 and self.increment_and_abort())
+        L2 = hookedup.List(self.original, pre_add=hold_only_4_items)
         self.list *= 3
         self.L *= 3
-        self.L2 *= 3
+        L2 *= 3
         self.assertTrue(self.L == self.list)
         self.assertTrue(len(self.original) * 2 == self.count)
-        self.assertTrue(self.original == self.L2)
+        self.assertTrue(self.original == L2)
         self.assertTrue(isinstance(self.L, hookedup.List))
-        self.assertTrue(isinstance(self.L2, hookedup.List))
+        self.assertTrue(isinstance(L2, hookedup.List))
 
     def test_delitem_int_index(self):
         L2 = hookedup.List(self.list, pre_remove=self.increment_and_abort)

@@ -46,7 +46,7 @@ class List(list):
 
     def _call_post_hook_fxn(self, hook_name, *args):
         """ run the named hook with supplied arguments """
-        self._hook[hook_name](*args)
+        self._hook[hook_name](self, *args)
 
     def _hook_fxn_aborts(self, hook_name, *args):
         """ run the named hook with supplied arguments, and return whether function raised Abort 
@@ -54,7 +54,7 @@ class List(list):
         Returns: True or False
         """
         try:
-            self._hook[hook_name](*args)
+            self._hook[hook_name](self, *args)
         except Abort:
             self._abort_stats[hook_name] += 1
             return True
