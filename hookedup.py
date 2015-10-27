@@ -18,6 +18,7 @@ class List(list):
         super().__init__(*args)
         empty_func = lambda: lambda *_, **__: None
         self._hook = collections.defaultdict(empty_func)
+        self._abort_stats = collections.defaultdict(int)
         self._hook.update(kwargs)
 
     def clear(self):
@@ -51,6 +52,7 @@ class List(list):
         try:
             self._hook[hook_name](*args)
         except Abort:
+            self._abort_stats[hook_name] += 1
             return True
         return False
 
