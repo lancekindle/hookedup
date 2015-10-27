@@ -22,20 +22,20 @@ class List(list):
             self._hook.update(kwargs['hook'])
 
     def clear(self):
-        """ remove items from list individually, starting at index 0. Call pre and post-remove
-        functions for each item and do not remove item if pre-remove raises Abort.
+        """ remove items from list individually, starting at index 0. Call pre and post_remove
+        functions for each item and do not remove item if pre_remove raises Abort.
         """
         i = 0
         while i < len(self):
             item = self[i]
-            if self._hook_fxn_aborts('pre-remove', item):
+            if self._hook_fxn_aborts('pre_remove', item):
                 i += 1  # compensate for not removing item @ i
             else:
                 super().__delitem__(i)
-                self._hook['post-remove'](item)
+                self._hook['post_remove'](item)
 
     def extend(self, items):
-        """ append items individually, calling pre and post-add functions. If pre-add function
+        """ append items individually, calling pre and post_add functions. If pre_add function
         raises Abort, will not add that item.
         """
         if not isinstance(items, collections.Iterable):
@@ -69,36 +69,36 @@ class List(list):
             raise IndexError(fxn_name + ' index out of range')
 
     def insert(self, index, item):
-        """ insert item into list at given index, unless pre-add function raises Abort. """
-        if self._hook_fxn_aborts('pre-add', item):
+        """ insert item into list at given index, unless pre_add function raises Abort. """
+        if self._hook_fxn_aborts('pre_add', item):
             super().insert(index, item)
-            self._hook['post-add'](item)
+            self._hook['post_add'](item)
 
     def append(self, item):
-        """ append item to end of list, unless pre-add function raises Abort """
-        if not self._hook_fxn_aborts('pre-add', item):
+        """ append item to end of list, unless pre_add function raises Abort """
+        if not self._hook_fxn_aborts('pre_add', item):
             super().append(item)
-            self._hook['post-add'](item)
+            self._hook['post_add'](item)
         
     def pop(self, index=-1):
-        """ Pop item @ index (or end of list if not supplied). If pre-remove function raises Abort,
+        """ Pop item @ index (or end of list if not supplied). If pre_remove function raises Abort,
         item will not be removed. Regardless of abort status, item will still be returned
         """
         self._verify_index_bounds(index, "pop")
         item = self[index]
-        if self._hook_fxn_aborts('pre-remove', item):
+        if self._hook_fxn_aborts('pre_remove', item):
             return item  # return expected value even in Abort: return item w/o removing from list
         item = super().pop(index)
-        self._hook['post-remove'](item)
+        self._hook['post_remove'](item)
         return item
 
     def remove(self, item):
-        """ remove first instance of item from list, unless pre-remove function raises Abort """
+        """ remove first instance of item from list, unless pre_remove function raises Abort """
         if item not in self:
             raise ValueError('list.remove(x): x not in list')
-        if not self._hook_fxn_aborts('pre-remove', item):
+        if not self._hook_fxn_aborts('pre_remove', item):
             super().remove(item)
-            self._hook['post-remove'](item)
+            self._hook['post_remove'](item)
 
     def __iadd__(self, items):
         """ in-place add items. It is the same as extend(), but we must implement both here so that
@@ -127,9 +127,9 @@ class List(list):
         if type(index) == int:
             self._verify_index_bounds(index)
             item = self[index]
-            if not self._hook_fxn_aborts('pre-remove', item):
+            if not self._hook_fxn_aborts('pre_remove', item):
                 super().__delitem__(index)
-                self._hook['post-remove'](item)
+                self._hook['post_remove'](item)
             return
         list_slice = self[index]  # trigger standard error if index is not slice
         last_index = self._replace_corresponding_items_in_both_slices(index, list_slice, [])
@@ -137,12 +137,12 @@ class List(list):
         self._remove_remaining_items_in_list_slice(index, last_index, overflow)
 
     def __setitem__(self, index, replacement):
-        """ Replace item at index in list with replacement, unless pre-replace function raises
+        """ Replace item at index in list with replacement, unless pre_replace function raises
         Abort. If setting more than one item at a time using slicing, replace items individually,
-        calling pre and post-replace functions for each. After replacing items, if slicing 
-        specifies more items to add, add additional items individually, calling pre and post-add 
+        calling pre and post_replace functions for each. After replacing items, if slicing 
+        specifies more items to add, add additional items individually, calling pre and post_add 
         functions for each. If slicing specifies items to remove from list, remove items
-        individually, calling pre and post-remove functions for each.
+        individually, calling pre and post_remove functions for each.
         self[0:3] = [0,1]  # replace two items on list (index 0 & 1) with two items
         self[0:3] = [0]  # replace one item on list (index 0), and remove other item (index 1) from list
         self[0:3] = [0,1,2]  # replace two items on list (index 0 & 1) with first two items on
@@ -151,9 +151,9 @@ class List(list):
         if type(index) == int:
             self._verify_index_bounds(index)
             item = self[index]
-            if not self._hook_fxn_aborts('pre-replace', item, replacement):
+            if not self._hook_fxn_aborts('pre_replace', item, replacement):
                 super().__setitem__(index, replacement)
-                self._hook['post-replace'](item, replacement)
+                self._hook['post_replace'](item, replacement)
             return
         list_slice = self[index]  # trigger standard error if index is not slice
         replacement = list(replacement)  # all fxns below expect a list-like object.
@@ -196,31 +196,31 @@ class List(list):
 
     def _remove_remaining_items_in_list_slice(self, islice, i, overflow):
         """ attempt to remove overflow # of items from list, starting at index i, and call
-        pre-remove and post-remove functions. Will not remove item if pre-remove raises Abort
+        pre_remove and post_remove functions. Will not remove item if pre_remove raises Abort
         """
         step = islice.step or 1
         for _ in range(overflow):
             item = self[i]
-            if self._hook_fxn_aborts('pre-remove', item):
+            if self._hook_fxn_aborts('pre_remove', item):
                 i += step  # avoid removal attempt of same item
                 continue
             super().__delitem__(i)
-            self._hook['post-remove'](item)
+            self._hook['post_remove'](item)
             if step > 0:
                 i += step - 1  # normally 0, but compensdated for larger step-sizes
             else:
                 i += step  # negative steps do not need compensation for removing at an index
 
     def _add_remaining_items_in_replacement_slice(self, i, overflow, replacement):
-        """ insert remaining items in replacement slice to self list, unless pre-add aborts.
+        """ insert remaining items in replacement slice to self list, unless pre_add aborts.
         overflow: a negative number whose absolute value indicate the number of items to insert
         """
         for repl_index in range(overflow, 0, 1):
             item = replacement[repl_index]
-            if not self._hook_fxn_aborts('pre-add', item):
+            if not self._hook_fxn_aborts('pre_add', item):
                 super().insert(i, item)
                 i += 1
-                self._hook['post-add'](item)
+                self._hook['post_add'](item)
 
 
 class PreventHookedupOverwriteReset:

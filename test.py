@@ -61,8 +61,8 @@ class TestHookedupList(unittest.TestCase):
         self.original = list(range(4))
         self.list = list(self.original)
         self.L = hookedup.List(self.original)
-        self.post_hooks = ['post-add', 'post-replace', 'post-remove']
-        self.pre_hooks = ['pre-add', 'pre-replace', 'pre-remove']
+        self.post_hooks = ['post_add', 'post_replace', 'post_remove']
+        self.pre_hooks = ['pre_add', 'pre_replace', 'pre_remove']
 
     def test_lists_are_equal_and_correct_instance(self):
         self.assertTrue(self.L == self.original == self.list)
@@ -86,7 +86,7 @@ class TestHookedupList(unittest.TestCase):
         self.assertTrue(L == self.list)
         self.assertTrue(isinstance(L, hookedup.List))
         hold_only_4_items = lambda *_: (len(self.L2) >= 4 and self.increment_and_abort())
-        hook = {'pre-add': hold_only_4_items}
+        hook = {'pre_add': hold_only_4_items}
         self.L2 = hookedup.List(hook=hook)
         self.L2 += self.list
         self.assertTrue(self.L2 == L)
@@ -98,7 +98,7 @@ class TestHookedupList(unittest.TestCase):
 
     def test_imul(self):
         hold_only_4_items = lambda *_: (len(self.L2) >= 4 and self.increment_and_abort())
-        hook = {'pre-add': hold_only_4_items}
+        hook = {'pre_add': hold_only_4_items}
         self.L2 = hookedup.List(self.original, hook=hook)
         self.list *= 3
         self.L *= 3
@@ -110,7 +110,7 @@ class TestHookedupList(unittest.TestCase):
         self.assertTrue(isinstance(self.L2, hookedup.List))
 
     def test_delitem_int_index(self):
-        hook = {'pre-remove': self.increment_and_abort}
+        hook = {'pre_remove': self.increment_and_abort}
         L2 = hookedup.List(self.list, hook=hook)
         self.assertTrue(self.list == self.L == L2)
         for _ in self.original:
@@ -127,7 +127,7 @@ class TestHookedupList(unittest.TestCase):
         """ verify that deleting slices in hooked.List matches list behavior. Also verify that
         aborted slice deletion does not delete the abort-deleted item
         """
-        hook = {'pre-remove': self.increment_and_abort} 
+        hook = {'pre_remove': self.increment_and_abort} 
         slices = [slice(1,2), slice(1,3), slice(1,4,2), slice(0,5,2), slice(4, 0, -1), 
                   slice(3, None, -1), slice(3, None, -2)]
         for s in slices:
@@ -142,7 +142,7 @@ class TestHookedupList(unittest.TestCase):
             self.assertTrue(difference == self.count)
 
     def test_clear(self):
-        hook = {'pre-remove': self.increment_and_abort}
+        hook = {'pre_remove': self.increment_and_abort}
         L2 = hookedup.List(self.list, hook=hook)
         self.assertTrue(self.L == self.list == L2)
         self.L.clear()
@@ -159,7 +159,7 @@ class TestHookedupList(unittest.TestCase):
         self.assertTrue(self.list == L)
         L.extend([])
         self.assertTrue(self.list == L)
-        hook = {'pre-add': self.increment_and_abort}
+        hook = {'pre_add': self.increment_and_abort}
         L = hookedup.List(hook=hook)
         L.extend(self.list)
         self.assertTrue(self.count == len(self.list))
