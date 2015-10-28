@@ -1,4 +1,5 @@
 import collections
+import warnings
 
 class Abort(Exception):
     """ raise this when aborting an action. Must be raised during the pre-action hook call """
@@ -15,11 +16,16 @@ class List(list):
         """ init a list, with an optional "hook" keyword argument that supplies a dictionary
         mapping a pre-action and post-action keyword to a function
         """
+        keywords = set(['pre_add', 'pre_remove', 'pre_replace', 
+                        'post_add', 'post_remove', 'post_replace'])
         super().__init__(*args)
         empty_func = lambda: lambda *_, **__: None
         self._hook = collections.defaultdict(empty_func)
         self._abort_stats = collections.defaultdict(int)
         self._hook.update(kwargs)
+        unrecognized = set(kwargs.keys()) - keywords
+        if unrecognized:
+            warnings.warn('unrecognized keywords passed to hookedup.List: ' + str(unrecognized))
 
     def clear(self):
         """ remove items from list individually, starting at index 0. Call pre and post_remove
