@@ -234,6 +234,31 @@ class List(list):
                 self._call_post_hook_fxn('post_add', item)
 
 
+class PreventOverwriteProperty:
+    
+    @classmethod
+    def setup(cls, *args, **kwargs):
+        """setup for property(). Inside a separate class, call
+        property(PreventOverwriteProperty(L, **hooks)) where 
+        L is a premade list you want each time, and **hooks is a dictionary of
+        the hooks you want installed in the list. Each time an owner accesses
+        it's list, it will get the same list (created the first time it's
+        accessed, and found in a dictionary each time after that)
+        """
+        self = cls()
+        self._owners = {}
+        construct_list = lambda: List(*args, **kwargs)
+
+        def getter(owner):
+            if owner in self._owners:
+                return self._owners[owner]
+            L = construct_list()
+            self._owners[owner] = L
+            return L
+
+        return getter
+
+
 class PreventHookedupOverwriteReset:
     """ inherit from this to prevent a hookedup List from being overwritten and/or reset. When user
     attempts to set attribute of inheriting class, if attribute already on class is a hookedup
